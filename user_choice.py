@@ -1,6 +1,16 @@
 from bs4 import BeautifulSoup
 import urllib.request
+import datetime
 
+def convert_date(d):
+    month = {'Jan.':'01', 'Feb.':'02', 'Mar.':'03', 'Apr.':'04', 'May':'05',
+             'Jun.':'06', 'Jul.':'07', 'Aug.':'08', 'Sep.':'09', 'Oct.':'10',
+             'Nov.':'11', 'Dec.':'12'}
+    part = d.split()
+    new_date = part[0] + "/" + month[part[1]] + "/" + part[2]
+    return new_date
+
+#main program
 choice = input("Enter the choice of TV show/Movie")
 
 words = choice.split()
@@ -39,7 +49,23 @@ for row in right_table.findAll("tr"):
          #If it's a movie then no episodes will exist
          try:
              episode_url = soup.find('a', class_='bp_item np_episode_guide np_right_arrow').get('href')
-             print(episode_url)
+             ans = show_url + episode_url+"?ref_=tt_ov_epl"
+             page = urllib.request.urlopen(ans)
+             soup = BeautifulSoup(page, 'html.parser')
+             current_date = datetime.datetime.now().strftime("%d/%m/%Y")
+             episode_date = soup.find_all('div', class_='airdate')
+             #finding next episode date
+             for date in episode_date:
+                 date = date.get_text(strip=True)
+                 #Making dates a datetime object so that they can be compared.
+                 new_date = datetime.datetime.strptime(convert_date(date), "%d/%m/%Y")
+                 curr_date = datetime.datetime.strptime(current_date, "%d/%m/%Y")
+
+                 if new_date >= curr_date:
+                     print("Next episode: " + date)
+                     break
+             else:
+                 print("No new episodes upcoming yet!")
          except:
              pass
          print()
