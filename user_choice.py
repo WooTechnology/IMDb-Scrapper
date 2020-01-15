@@ -49,7 +49,7 @@ for row in right_table.findAll("tr"):
          #If it's a movie then no episodes will exist
          try:
              episode_url = soup.find('a', class_='bp_item np_episode_guide np_right_arrow').get('href')
-             ans = show_url + episode_url+"?ref_=tt_ov_epl"
+             ans = show_url + episode_url
              page = urllib.request.urlopen(ans)
              soup = BeautifulSoup(page, 'html.parser')
              current_date = datetime.datetime.now().strftime("%d/%m/%Y")
@@ -65,7 +65,16 @@ for row in right_table.findAll("tr"):
                      print("Next episode: " + date)
                      break
              else:
-                 print("No new episodes upcoming yet!")
+                 #There could be a possibilty that there is a new season episode for the show
+                 try:
+                     season_url = soup.find('a', {'id' : 'load_next_episodes'}).get('href')
+                     season_url = ans + season_url
+                     page = urllib.request.urlopen(season_url)
+                     soup = BeautifulSoup(page, 'html.parser')
+                     new_season = soup.find('div', class_='airdate').get_text(strip=True)
+                     print("Next season: " + new_season)
+                 except:
+                     print("No new episodes/seasons upcoming yet!")
          except:
              pass
          print()
