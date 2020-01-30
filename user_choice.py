@@ -11,31 +11,34 @@ def convert_date(d):
     return new_date
 
 #main program
-choice = input("Enter the choice of TV show/Movie")
+def main(entered_choice):
+    choice = entered_choice
 
-words = choice.split()
+    words = choice.split()
 
-updated_choice = ""
+    updated_choice = ""
 
-for word in words:
-    updated_choice = updated_choice + "+" + word
+    for word in words:
+        updated_choice = updated_choice + "+" + word
 
-#To remove the inital + sign from the string
-updated_choice = updated_choice[1:]
+    #To remove the inital + sign from the string
+    updated_choice = updated_choice[1:]
 
-url = "https://www.imdb.com/find?q="+ updated_choice + "&ref_=nv_sr_sm"
+    url = "https://www.imdb.com/find?q="+ updated_choice + "&ref_=nv_sr_sm"
 
-page = urllib.request.urlopen(url)
+    page = urllib.request.urlopen(url)
 
-soup = BeautifulSoup(page, 'html.parser')
+    soup = BeautifulSoup(page, 'html.parser')
 
-right_table=soup.find('table', class_="findList")
+    right_table=soup.find('table', class_="findList")
 
-ans = ""
-show_url = "https://www.imdb.com"
-for row in right_table.findAll("tr"):
-     cells = row.findAll('td', class_="result_text")
-     for cell in cells:
+    ans = ""
+    show_url = "https://www.imdb.com"
+    #if the entered show exists or not
+    try:
+        row = right_table.find("tr")
+        cells = row.findAll('td', class_="result_text")
+        for cell in cells:
          ans = show_url + cell.find('a').get('href')
          page = urllib.request.urlopen(ans)
          soup = BeautifulSoup(page, 'html.parser')
@@ -78,3 +81,10 @@ for row in right_table.findAll("tr"):
          except:
              pass
          print()
+    except:
+        print("This show doesn't exist.")
+
+shows_input = input("Enter the list of shows(seperated by comma)")
+shows_list = shows_input.split(',')
+for show in shows_list:
+    main(show)
