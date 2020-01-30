@@ -1,6 +1,25 @@
 from bs4 import BeautifulSoup
 import urllib.request
 import datetime
+import mysql.connector
+from tabulate import tabulate
+
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  passwd="root$",
+  database="tvshows"
+)
+
+mycursor = mydb.cursor()
+#We have created this database
+# mycursor.execute("CREATE DATABASE tvshows")
+
+#We need to drop the table because for every user a new table should be created.
+mycursor.execute("DROP TABLE Next_Show_Telecast")
+
+#creating a table to store the show and the next episode date
+mycursor.execute("CREATE TABLE Next_Show_Telecast (Show_Name VARCHAR(255), Air_Date VARCHAR(255))")
 
 def convert_date(d):
     month = {'Jan.':'01', 'Feb.':'02', 'Mar.':'03', 'Apr.':'04', 'May':'05',
@@ -13,7 +32,7 @@ def convert_date(d):
 #main program
 def main(entered_choice):
     choice = entered_choice
-
+    final_output = ""
     words = choice.split()
 
     updated_choice = ""
@@ -43,12 +62,12 @@ def main(entered_choice):
          page = urllib.request.urlopen(ans)
          soup = BeautifulSoup(page, 'html.parser')
          #Now we are on the particular shows page.
-         print(soup.find('title').get_text(strip=True))
+
          #To deal with shows having no rating yet.
-         try:
-             print("User Rating ", soup.find('div', class_="ratingValue").get_text(strip=True))
-         except AttributeError:
-             print("No reviews yet.")
+         # try:
+         #     print("User Rating ", soup.find('div', class_="ratingValue").get_text(strip=True))
+         # except AttributeError:
+         #     print("No reviews yet.")
          #If it's a movie then no episodes will exist
          try:
              episode_url = soup.find('a', class_='bp_item np_episode_guide np_right_arrow').get('href')
@@ -65,7 +84,7 @@ def main(entered_choice):
                  curr_date = datetime.datetime.strptime(current_date, "%d/%m/%Y")
 
                  if new_date >= curr_date:
-                     print("Next episode: " + date)
+                     final_output = "Next episode: " + date
                      break
              else:
                  #There could be a possibilty that there is a new season episode for the show
@@ -75,16 +94,26 @@ def main(entered_choice):
                      page = urllib.request.urlopen(season_url)
                      soup = BeautifulSoup(page, 'html.parser')
                      new_season = soup.find('div', class_='airdate').get_text(strip=True)
-                     print("Next season: " + new_season)
+                     final_output = "Next season: " + new_season
                  except:
-                     print("No new episodes/seasons upcoming yet!")
+                     final_output = "No new episodes/seasons upcoming yet!"
          except:
              pass
          print()
     except:
-        print("This show doesn't exist.")
+        final_output = "This show doesn't exist."
+    sql = "INSERT INTO Next_Show_Telecast (Show_Name, Air_Date) VALUES (%s, %s)"
+    val = (entered_choice, final_output)
+    mycursor.execute(sql, val)
+    mydb.commit()
+
 
 shows_input = input("Enter the list of shows(seperated by comma)")
 shows_list = shows_input.split(',')
+
 for show in shows_list:
     main(show)
+
+mycursor.execute("SELECT * FROM Next_Show_Telecast")
+myresult = mycursor.fetchall()
+print(tabulate(myresult, headers=["Show Name", "Air Date"], tablefmt='psql'))
